@@ -1,0 +1,27 @@
+node_modules/
+.npm-cache/
+
+data/
+
+# Secrets and personal runtime data (all subdirectories)
+.env*
+!.env.example
+*.sqlite*
+*.db
+*.db-*
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+*.bak
+*.backup
+test-results/
+dist/
+
+# Local working materials, duplicate archives and unreviewed screenshots
+/audit/
+/socratic-dev-spec/
+*.zip
+/*-preview.png
+/퀴즈경주/artifacts/

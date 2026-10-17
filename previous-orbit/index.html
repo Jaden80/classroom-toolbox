@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orbit — 30초 암산 챌린지</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <header><a class="logo" href="./index.html" aria-label="Orbit 처음으로"><span>◭</span> orbit</a><span class="nav-label">A LITTLE MATH. A BIG SPARK.</span><a href="#how">게임 방법 ↗</a></header>
+  <main>
+    <section class="hero" id="intro">
+      <div class="intro-copy"><p class="eyebrow">30 SECONDS · MATH CHALLENGE</p><h1>생각을 켜는<br>작은 <span>수학 우주.</span></h1><p class="description">복잡한 준비 없이, 가볍게 두뇌 워밍업.<br>30초 동안 몇 개의 별을 모을 수 있나요?</p><div class="difficulty" role="group" aria-label="난이도"><button class="selected" data-level="easy" aria-pressed="true">쉬움 <small>＋ −</small></button><button data-level="normal" aria-pressed="false">보통 <small>＋ − ×</small></button></div><button class="primary" id="start">챌린지 시작 <span>↗</span></button><p class="best">MY BEST <span id="best">0</span> <span class="muted">점</span></p></div>
+      <div class="orbit-caption"><span class="spark">✦</span> ONE ANSWER, ONE NEW STAR.<br><small>작은 정답이 모여, 나만의 별자리가 됩니다.</small></div>
+    </section>
+    <section id="game" class="game" hidden aria-label="암산 게임">
+      <div class="game-top"><p class="eyebrow">YOUR MIND, IN ORBIT</p><button class="ghost" id="quit">그만하기 ↗</button></div>
+      <div class="stats"><div><span>남은 시간</span><strong id="time">30<span>초</span></strong></div><div><span>점수</span><strong id="score">0</strong></div><div><span>연속 정답</span><strong id="combo">0</strong></div></div>
+      <div class="timer-track"><div id="timer-bar"></div></div>
+      <p class="question-label">빈칸에 들어갈 답은?</p><h2 id="question"></h2>
+      <form id="answer-form" autocomplete="off"><label class="sr-only" for="answer">정답</label><input id="answer" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="?" required maxlength="4"><button class="primary" type="submit">정답 확인 ↗</button></form>
+      <p id="feedback" class="feedback" aria-live="polite">숫자를 입력하고 Enter를 누르세요.</p>
+    </section>
+    <section id="result" class="result" hidden><p class="eyebrow">A NEW CONSTELLATION</p><h2>좋아요,<br>별이 더 밝아졌어요.</h2><p class="result-score"><span id="final-score">0</span><small>점</small></p><p id="summary" class="description"></p><button id="again" class="primary">한 번 더 도전 ↗</button><button id="home" class="ghost">난이도 바꾸기</button></section>
+    <section id="how" class="how"><p class="eyebrow">HOW TO PLAY</p><div><h2>딱 30초.<br>오직 당신의 감각.</h2><p>정답을 입력하고 Enter를 누르세요.<br>정답 하나에 10점, 3연속 정답마다 보너스 5점.<br>틀려도 괜찮아요. 다음 문제에서 다시 시작하면 돼요.</p></div></section>
+  </main>
+  <footer><span>orbit — 작은 몰입의 시간</span><span>MADE FOR YOUR DAILY SPARK ✦</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>

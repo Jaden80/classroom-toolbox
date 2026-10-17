@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS teacher (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT, created_at BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS teacher_session (token_hash TEXT PRIMARY KEY, teacher_id TEXT NOT NULL REFERENCES teacher(id) ON DELETE CASCADE, expires_at BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS password_reset (token_hash TEXT PRIMARY KEY, teacher_id TEXT NOT NULL REFERENCES teacher(id) ON DELETE CASCADE, expires_at BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS quiz_set (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES teacher(id) ON DELETE CASCADE, title TEXT NOT NULL, created_at BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS question (set_id TEXT NOT NULL REFERENCES quiz_set(id) ON DELETE CASCADE, ordinal INTEGER NOT NULL, body TEXT NOT NULL, PRIMARY KEY(set_id,ordinal));
+CREATE TABLE IF NOT EXISTS room (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL UNIQUE REFERENCES teacher(id) ON DELETE CASCADE, set_id TEXT NOT NULL REFERENCES quiz_set(id), title TEXT NOT NULL, code TEXT NOT NULL UNIQUE, state TEXT NOT NULL CHECK(state IN ('waiting','running','results')), created_at BIGINT NOT NULL, expires_at BIGINT NOT NULL, started_at BIGINT, ended_at BIGINT);
+CREATE TABLE IF NOT EXISTS room_question (room_id TEXT NOT NULL REFERENCES room(id) ON DELETE CASCADE, ordinal INTEGER NOT NULL, body TEXT NOT NULL, PRIMARY KEY(room_id,ordinal));
+CREATE TABLE IF NOT EXISTS team (id TEXT PRIMARY KEY, room_id TEXT NOT NULL REFERENCES room(id) ON DELETE CASCADE, name TEXT NOT NULL, lane INTEGER NOT NULL CHECK(lane BETWEEN 1 AND 6), token_hash TEXT UNIQUE NOT NULL, next_ordinal INTEGER NOT NULL DEFAULT 1, feedback_ordinal INTEGER, finished_at BIGINT, UNIQUE(room_id,name), UNIQUE(room_id,lane));
+CREATE TABLE IF NOT EXISTS answer (team_id TEXT NOT NULL REFERENCES team(id) ON DELETE CASCADE, ordinal INTEGER NOT NULL, request_id TEXT NOT NULL, choice TEXT NOT NULL, correct INTEGER NOT NULL CHECK(correct IN (0,1)), accepted_at BIGINT NOT NULL, PRIMARY KEY(team_id,ordinal), UNIQUE(team_id,request_id));
+CREATE TABLE IF NOT EXISTS request_limit (bucket TEXT PRIMARY KEY, hits INTEGER NOT NULL, expires_at BIGINT NOT NULL);
+CREATE INDEX IF NOT EXISTS room_expiry ON room(expires_at);
+CREATE INDEX IF NOT EXISTS team_room ON team(room_id);
