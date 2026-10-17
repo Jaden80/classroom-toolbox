@@ -25,3 +25,7 @@ dist/
 *.zip
 /*-preview.png
 /퀴즈경주/artifacts/
+_site/
+.firebase/
+.vercel/
+firebase-debug.log

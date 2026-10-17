@@ -100,6 +100,7 @@ function route() {
 }
 for (const tool of tools) {
   const link = document.createElement('a'); link.className = 'tool'; link.href = tool.route;
+  if (tool.unavailable) { link.setAttribute('aria-disabled', 'true'); link.addEventListener('click', event => { event.preventDefault(); announce('온라인 서비스 연결을 준비하고 있습니다.'); }); }
   if (tool.newWindow) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
   for (const [className, text] of [['tool-number', tool.number],['tool-label',tool.label],['tool-name',tool.name],['tool-description',tool.description],['tool-arrow','↗']]) {
     const span = document.createElement('span'); span.className = className; span.textContent = text; if (className === 'tool-arrow') span.setAttribute('aria-hidden','true'); link.append(span);
