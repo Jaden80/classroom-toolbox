@@ -2,6 +2,7 @@ import http from 'node:http';
 import {readFile,stat} from 'node:fs/promises';
 import {resolve,extname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {isIP} from 'node:net';
 import {openStore} from './db.ts';
 import {Game,hash,secret} from './game.ts';
 import {Auth,SESSION_MS} from './auth.ts';
@@ -49,7 +50,10 @@ export const server=http.createServer(async(req,res)=>{
     const url=new URL(req.url??'/',origin),path=url.pathname;
     if(path.startsWith('/api/')){
       sameOrigin(req);Object.entries(headers).forEach(([k,v])=>res.setHeader(k,v));
-      const ip=req.socket.remoteAddress??'unknown';const ipKey=hash(salt+ip);
+      // Trust the client IP header only on Vercel, where the edge overwrites
+      // it. Local servers never trust arbitrary forwarded headers.
+      const forwarded=process.env.VERCEL?req.headers['x-vercel-forwarded-for']:undefined;
+      const ip=typeof forwarded==='string'&&isIP(forwarded.trim())?forwarded.trim():req.socket.remoteAddress??'unknown';const ipKey=hash(salt+ip);
       if(path==='/api/config'&&req.method==='GET'){return json(res,{configured:idAccounts||await auth.configured(),authMode:idAccounts?'id':auth.cloud?'supabase':'local',mailConfigured:auth.cloud||!!process.env.SMTP_URL,production,cleanupHealthy:!cleanupFailed});}
       if(path==='/api/health')return json(res,{ok:!cleanupFailed,database:store.kind},cleanupFailed?503:200);
       if(req.method==='GET'){

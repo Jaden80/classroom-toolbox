@@ -29,3 +29,5 @@ _site/
 .firebase/
 .vercel/
 firebase-debug.log
+supabase/.temp/
+supabase/.branches/

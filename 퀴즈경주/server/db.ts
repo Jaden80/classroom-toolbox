@@ -13,12 +13,17 @@ export async function openStore(path='data/quiz.sqlite',connection?:string):Prom
     // pg connection-string SSL options override the explicit ssl object. Remove
     // them so production always verifies the provider's certificate.
     for(const option of ['sslmode','sslcert','sslkey','sslrootcert'])connectionUrl.searchParams.delete(option);
-    const pool=new pg.Pool({connectionString:connectionUrl.toString(),max:4,connectionTimeoutMillis:10000,idleTimeoutMillis:20000,ssl:process.env.PGSSL==='disable'?false:{rejectUnauthorized:true,...(process.env.PGSSL_CA?{ca:process.env.PGSSL_CA}:{})}});
+    const ca=process.env.PGSSL_CA??(connectionUrl.hostname.endsWith('.pooler.supabase.com')?readFileSync(new URL('./supabase-ca.crt',import.meta.url),'utf8'):undefined);
+    const pool=new pg.Pool({connectionString:connectionUrl.toString(),max:4,connectionTimeoutMillis:10000,idleTimeoutMillis:20000,ssl:process.env.PGSSL==='disable'?false:{rejectUnauthorized:true,...(ca?{ca}:{})}});
     const client=await pool.connect();
-    try{await client.query('CREATE SCHEMA IF NOT EXISTS quiz_private');await client.query('SET search_path TO quiz_private');await client.query(schema);
+    try{if(process.env.NODE_ENV==='production'){
+      // Production migrations run separately with an administrator. The runtime
+      // role only needs CRUD permissions and must never provision the database.
+      await client.query('SELECT 1 FROM quiz_private.account LIMIT 0');
+    }else{await client.query('CREATE SCHEMA IF NOT EXISTS quiz_private');await client.query('SET search_path TO quiz_private');await client.query(schema);
       await client.query('REVOKE ALL ON SCHEMA quiz_private FROM PUBLIC');
       await client.query('REVOKE ALL ON ALL TABLES IN SCHEMA quiz_private FROM PUBLIC');
-      for(const table of ['teacher','teacher_session','password_reset','quiz_set','question','room','room_question','team','answer','request_limit','account','account_session','student_team','learning_record'])await client.query(`ALTER TABLE quiz_private.${table} ENABLE ROW LEVEL SECURITY`);
+      for(const table of ['teacher','teacher_session','password_reset','quiz_set','question','room','room_question','team','answer','request_limit','account','account_session','student_team','learning_record'])await client.query(`ALTER TABLE quiz_private.${table} ENABLE ROW LEVEL SECURITY`);}
     }finally{client.release();}
     return {kind:'postgres',async tx(fn){const c=await pool.connect();try{await c.query('BEGIN');await c.query('SET LOCAL search_path TO quiz_private');
       // Single-teacher application: cross-process advisory lock serializes all state transitions.

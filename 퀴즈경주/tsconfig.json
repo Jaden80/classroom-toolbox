@@ -1,1 +1,27 @@
-{"compilerOptions":{"target":"ES2023","module":"NodeNext","moduleResolution":"NodeNext","lib":["ES2023","DOM","DOM.Iterable"],"strict":true,"noEmit":true,"allowImportingTsExtensions":true,"esModuleInterop":true,"skipLibCheck":true,"types":["node"]},"include":["src/**/*.ts","shared/**/*.ts","server/**/*.ts","tests/**/*.ts"]}
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "shared/**/*.ts",
+    "server/**/*.ts",
+    "tests/**/*.ts"
+  ]
+}

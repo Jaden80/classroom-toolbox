@@ -6,3 +6,5 @@ data/
 artifacts/node_modules/
 test-results/
 *.log
+
+.vercel
