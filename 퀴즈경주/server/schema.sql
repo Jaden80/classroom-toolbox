@@ -10,3 +10,8 @@ CREATE TABLE IF NOT EXISTS answer (team_id TEXT NOT NULL REFERENCES team(id) ON 
 CREATE TABLE IF NOT EXISTS request_limit (bucket TEXT PRIMARY KEY, hits INTEGER NOT NULL, expires_at BIGINT NOT NULL);
 CREATE INDEX IF NOT EXISTS room_expiry ON room(expires_at);
 CREATE INDEX IF NOT EXISTS team_room ON team(room_id);
+CREATE TABLE IF NOT EXISTS account (id TEXT PRIMARY KEY,username TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('teacher','student')),teacher_id TEXT NOT NULL REFERENCES teacher(id) ON DELETE CASCADE,created_at BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS account_session (token_hash TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES account(id) ON DELETE CASCADE,expires_at BIGINT NOT NULL);
+CREATE TABLE IF NOT EXISTS student_team (account_id TEXT NOT NULL REFERENCES account(id) ON DELETE CASCADE,team_id TEXT UNIQUE NOT NULL REFERENCES team(id) ON DELETE CASCADE,room_id TEXT NOT NULL REFERENCES room(id) ON DELETE CASCADE,PRIMARY KEY(account_id,room_id));
+CREATE TABLE IF NOT EXISTS learning_record (id TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES account(id) ON DELETE CASCADE,room_id TEXT NOT NULL,title TEXT NOT NULL,team_name TEXT NOT NULL,score INTEGER NOT NULL,total INTEGER NOT NULL,answered INTEGER NOT NULL,elapsed_ms BIGINT NOT NULL,finished_at BIGINT NOT NULL,UNIQUE(account_id,room_id));
+CREATE INDEX IF NOT EXISTS record_account ON learning_record(account_id,finished_at);

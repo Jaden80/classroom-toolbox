@@ -4,6 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 SELECT cron.schedule('quiz-race-expiry', '*/5 * * * *', $job$
   DELETE FROM quiz_private.room WHERE expires_at <= floor(extract(epoch from now()) * 1000)::bigint;
   DELETE FROM quiz_private.teacher_session WHERE expires_at <= floor(extract(epoch from now()) * 1000)::bigint;
+  DELETE FROM quiz_private.account_session WHERE expires_at <= floor(extract(epoch from now()) * 1000)::bigint;
   DELETE FROM quiz_private.password_reset WHERE expires_at <= floor(extract(epoch from now()) * 1000)::bigint;
   DELETE FROM quiz_private.request_limit WHERE expires_at <= floor(extract(epoch from now()) * 1000)::bigint;
 $job$);

@@ -1,6 +1,7 @@
 import {randomBytes,randomInt,randomUUID,createHash} from 'node:crypto';
 import type {Query,Store,Row} from './db.ts';
 import {AppError,requireValue,text,validateQuestions,rankTeams} from '../shared/rules.ts';
+import {archiveLearning} from './accounts.ts';
 export const hash=(token:string)=>createHash('sha256').update(token).digest('hex');
 export const secret=()=>randomBytes(32).toString('base64url');
 export class Game {
@@ -8,8 +9,9 @@ export class Game {
   constructor(store:Store,now=()=>Date.now()){this.store=store;this.now=now;}
   async cleanup(){return this.store.tx(async q=>{
     const expired=await q.all('SELECT id FROM room WHERE expires_at<=?',[this.now()]);
+    for(const item of expired){const room=await q.get('SELECT * FROM room WHERE id=?',[item.id]);await archiveLearning(q,room!,Math.min(Number(room!.expires_at),this.now()));}
     await q.run('DELETE FROM room WHERE expires_at<=?',[this.now()]);
-    for(const table of ['teacher_session','password_reset','request_limit'])await q.run(`DELETE FROM ${table} WHERE expires_at<=?`,[this.now()]);
+    for(const table of ['teacher_session','account_session','password_reset','request_limit'])await q.run(`DELETE FROM ${table} WHERE expires_at<=?`,[this.now()]);
     return expired.length;
   });}
   async limit(bucket:string,max:number,windowMs:number){return this.store.tx(async q=>{
@@ -41,6 +43,7 @@ export class Game {
     return {id:r.id,title:r.title,code:r.code,state:r.state,startedAt:r.started_at==null?null:Number(r.started_at),endedAt:r.ended_at==null?null:Number(r.ended_at),expiresAt:Number(r.expires_at),serverTime:snapshotTime,total:Number(count!.n),teams:rankTeams(summaries)};
   }
   async teacherState(owner:string){return this.store.tx(async q=>{
+    for(const expired of await q.all('SELECT * FROM room WHERE owner_id=? AND expires_at<=?',[owner,this.now()]))await archiveLearning(q,expired,Number(expired.expires_at));
     await q.run('DELETE FROM room WHERE owner_id=? AND expires_at<=?',[owner,this.now()]);
     const sets=await q.all('SELECT s.id,s.title,s.created_at, COUNT(p.ordinal) AS count FROM quiz_set s LEFT JOIN question p ON p.set_id=s.id WHERE s.owner_id=? GROUP BY s.id,s.title,s.created_at ORDER BY s.created_at DESC',[owner]);
     const r=await q.get('SELECT * FROM room WHERE owner_id=?',[owner]);
@@ -62,7 +65,8 @@ export class Game {
         const title=text(data.title,80);requireValue(title&&title.length<=80,'INVALID_TITLE','이름은 1~80자로 입력하세요.');
         await q.run('UPDATE quiz_set SET title=? WHERE id=?',[title,set.id]);return {ok:true};
       }
-      await q.run('DELETE FROM room WHERE owner_id=? AND expires_at<=?',[owner,this.now()]);
+      for(const expired of await q.all('SELECT * FROM room WHERE owner_id=? AND expires_at<=?',[owner,this.now()]))await archiveLearning(q,expired,Number(expired.expires_at));
+    await q.run('DELETE FROM room WHERE owner_id=? AND expires_at<=?',[owner,this.now()]);
       const existing=await q.get('SELECT * FROM room WHERE owner_id=?',[owner]);
       if(action==='delete-set'){
         requireValue(!existing||existing.set_id!==set.id,'IN_USE','이 문제로 열린 수업을 먼저 닫아 주세요.');
@@ -86,22 +90,24 @@ export class Game {
     if(action==='end-room'){
       if(r.state!=='results')await this.end(q,r);return {ok:true};
     }
-    if(action==='close-room'){await q.run('DELETE FROM room WHERE id=?',[r.id]);return {ok:true};}
+    if(action==='close-room'){await archiveLearning(q,r,this.now());await q.run('DELETE FROM room WHERE id=?',[r.id]);return {ok:true};}
     throw new AppError('UNKNOWN_ACTION','지원하지 않는 요청입니다.',404);
   });}
-  async end(q:Query,r:Row){await q.run('UPDATE room SET state=?,ended_at=?,expires_at=? WHERE id=?',['results',this.now(),Math.min(Number(r.expires_at),this.now()+30*60000),r.id]);}
-  async join(code:unknown,name:unknown){
+  async end(q:Query,r:Row){const now=this.now();await q.run('UPDATE room SET state=?,ended_at=?,expires_at=? WHERE id=?',['results',now,Math.min(Number(r.expires_at),now+30*60000),r.id]);await archiveLearning(q,{...r,ended_at:now},now);}
+  async join(code:unknown,name:unknown,account?:{id:string;teacher_id:string}){
     requireValue(typeof code==='string'&&/^\d{6}$/.test(code),'INVALID_CODE','6자리 참여 코드를 입력하세요.');
     const clean=text(name,12);requireValue(clean.length>=2&&clean.length<=12&&!/[\u0000-\u001f\u007f]/.test(clean),'INVALID_NAME','모둠 이름은 2~12자로 입력하세요.');
     return this.store.tx(async q=>{
       const r=await q.get('SELECT * FROM room WHERE code=?',[code]);
       requireValue(r&&Number(r.expires_at)>this.now(),'INVALID_CODE','참여 코드를 확인해 주세요.');
       requireValue(r.state==='waiting','ROOM_NOT_WAITING','이미 시작했거나 종료된 수업입니다.');
+      if(account){requireValue(account.teacher_id===r.owner_id,'UNAUTHORIZED','담당 교사의 수업에만 참여할 수 있습니다.',403);requireValue(!await q.get('SELECT team_id FROM student_team WHERE account_id=? AND room_id=?',[account.id,r.id]),'ALREADY_JOINED','이미 참여한 수업입니다. 기존 기기에서 이어서 참여하세요.');}
       const teams=await q.all('SELECT * FROM team WHERE room_id=?',[r.id]);
       requireValue(!teams.some(t=>t.name===clean),'DUPLICATE_NAME','이미 있는 모둠 이름입니다. 기존 기기라면 이어서 참여해 주세요.');
       requireValue(teams.length<6,'ROOM_FULL','6모둠이 모두 입장했습니다.');
       const token=secret(),id=randomUUID();const lane=[1,2,3,4,5,6].find(n=>!teams.some(t=>t.lane===n));
       await q.run('INSERT INTO team(id,room_id,name,lane,token_hash) VALUES(?,?,?,?,?)',[id,r.id,clean,lane,hash(token)]);
+      if(account)await q.run('INSERT INTO student_team(account_id,team_id,room_id) VALUES(?,?,?)',[account.id,id,r.id]);
       return {token,id};
     });
   }
