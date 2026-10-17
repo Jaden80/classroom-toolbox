@@ -1,0 +1,12 @@
+import {initializeApp} from 'firebase/app';
+import {initializeAuth,browserSessionPersistence,browserPopupRedirectResolver,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'firebase/auth';
+const response=await fetch('/__/firebase/init.json');
+if(!response.ok)throw Error('Firebase 설정을 불러오지 못했습니다. 배포 주소에서 다시 접속해 주세요.');
+const config=await response.json();
+export const app=initializeApp(config);
+export const auth=initializeAuth(app,{persistence:browserSessionPersistence,popupRedirectResolver:browserPopupRedirectResolver});
+const provider=new GoogleAuthProvider();
+provider.setCustomParameters({prompt:'select_account'});
+export const login=()=>signInWithPopup(auth,provider);
+export const logout=()=>signOut(auth);
+export {onAuthStateChanged};

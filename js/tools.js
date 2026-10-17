@@ -7,7 +7,7 @@ export const tools = [
   { id: 'quiz-race', name: '모둠 퀴즈 레이스', description: '정답을 모아 달리는 6모둠 퀴즈 경주. 교사 로그인 · 새 창으로 열려요.', route: '/quiz-race', label: 'TEAM QUIZ RACE', number: '03', newWindow: true }
 ].map(tool => {
   const url = tool.id === 'diary' ? deployments.diary : tool.id === 'quiz-race' ? deployments.quiz : null;
-  if (url) return {...tool, route: url, newWindow: true, description: tool.id === 'diary' ? 'Google 로그인으로 나만의 일기를 저장하고 다른 기기에서 이어 보세요.' : '아이디로 가입하고 모둠 경주와 나의 학습 기록을 확인해요.'};
+  if (url) return {...tool, label: tool.id === 'diary' ? 'MY PRIVATE DIARY' : tool.label, route: url, newWindow: true, description: tool.id === 'diary' ? 'Google 로그인으로 나만의 일기를 저장하고 다른 기기에서 이어 보세요.' : '아이디로 가입하고 모둠 경주와 나의 학습 기록을 확인해요.'};
   if (!local && url === '') return {...tool, route: '#/', unavailable: true, description: '온라인 서비스 연결을 준비하고 있습니다.'};
   return tool;
 });

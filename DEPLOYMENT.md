@@ -10,7 +10,7 @@
 
 ## 일기장
 
-`cloud-diary/`는 Google 로그인 일기장 준비 작업입니다. Firebase 프로젝트와 저장 지역 선택이 필요하며, 아직 배포가 완료되지 않았습니다. 기존 로컬 일기 데이터는 자동으로 외부에 옮기지 않습니다.
+주소: https://classroom-diary-jaden80.web.app/ . `cloud-diary/`는 Google 로그인과 사용자별 비공개 Firestore 저장을 사용하는 앱입니다. 서울 Standard 구성으로 Firebase Hosting에 배포했으며, 기존 로컬 일기 데이터는 자동으로 외부에 옮기지 않습니다. 보안 규칙 17개 검사를 통과했습니다. 실제 Google 계정 로그인 후 운영 저장 흐름의 최종 확인은 별도로 필요합니다.
 
 ## 퀴즈 레이스 아이디 모드
 
